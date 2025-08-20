@@ -1,5 +1,8 @@
 package com.example.weather_service.controller;
 
+import com.example.weather_service.dto.WeatherResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -8,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 @RestController
 public class WeatherController {
 
-    // Inject values from application.properties
     @Value("${visualcrossing.api.key}")
     private String apiKey;
 
@@ -16,13 +18,22 @@ public class WeatherController {
     private String apiUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/weather/{city}")
-    public String getWeather(@PathVariable String city) {
+    public WeatherResponse getWeather(@PathVariable String city) throws Exception {
         String url = apiUrl + city + "?unitGroup=metric&key=" + apiKey;
-
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
-        return response.getBody(); // return raw JSON for now
+        // Parse JSON
+        JsonNode root = objectMapper.readTree(response.getBody());
+        String resolvedCity = root.get("resolvedAddress").asText();
+        JsonNode today = root.get("days").get(0);
+
+        String date = today.get("datetime").asText();
+        double temp = today.get("temp").asDouble();
+        String conditions = today.get("conditions").asText();
+
+        return new WeatherResponse(resolvedCity, date, temp, conditions);
     }
 }
