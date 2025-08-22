@@ -4,6 +4,7 @@ import com.example.weather_service.dto.WeatherResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -19,14 +20,25 @@ public class WeatherController {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
-
+    
+    @Cacheable(value = "weather", key="#city")
     @GetMapping("/weather/{city}")
     public WeatherResponse getWeather(@PathVariable String city) throws Exception {
-        String url = apiUrl + city + "?unitGroup=metric&key=" + apiKey;
+        
+    	String url = apiUrl + city + "?unitGroup=metric&key=" + apiKey;
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
-        // Parse JSON
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalArgumentException("Invalid city: " + city);
+        }
+
         JsonNode root = objectMapper.readTree(response.getBody());
+
+        // Visual Crossing sometimes returns an "error" field
+        if (root.has("error")) {
+            throw new IllegalArgumentException("City not found: " + city);
+        }
+
         String resolvedCity = root.get("resolvedAddress").asText();
         JsonNode today = root.get("days").get(0);
 
@@ -36,4 +48,5 @@ public class WeatherController {
 
         return new WeatherResponse(resolvedCity, date, temp, conditions);
     }
+
 }
