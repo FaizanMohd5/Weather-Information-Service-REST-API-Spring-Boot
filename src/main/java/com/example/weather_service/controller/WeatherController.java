@@ -34,7 +34,6 @@ public class WeatherController {
 
         JsonNode root = objectMapper.readTree(response.getBody());
 
-        // Visual Crossing sometimes returns an "error" field
         if (root.has("error")) {
             throw new IllegalArgumentException("City not found: " + city);
         }

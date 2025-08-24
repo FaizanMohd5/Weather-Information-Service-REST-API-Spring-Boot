@@ -1,0 +1,14 @@
+services:
+  weather-service:
+    build: .
+    container_name: weather-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"

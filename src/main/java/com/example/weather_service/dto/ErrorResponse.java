@@ -17,3 +17,4 @@ public class ErrorResponse {
     public int getStatus() { return status; }
     public LocalDateTime getTimestamp() { return timestamp; }
 }
+
